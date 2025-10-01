@@ -1,6 +1,6 @@
 local M = { }
 
---> diagnostics fix
+--> diagnostics fix (temporary)
 vim = vim
 
 local types = { "neofetch", "fastfetch", "pfetch" }
@@ -12,12 +12,10 @@ local function pull_output(fetch_type)
     local result = handle:read("*a")
     handle:close()
 
-    --> strip ansi
     result = result:gsub('\27%[[%d;]*m', '')
     result = result:gsub('\27%[[%d;]*[A-Z]', '')
     result = result:gsub('\27%[%?%d+[hl]', '')
 
-    --> convert into blow
     local blow = { }
     for line in result:gmatch("[^\r\n]+") do
         table.insert(blow, line)
@@ -26,7 +24,7 @@ local function pull_output(fetch_type)
     return blow
 end
 
-local function create_window(output)
+local function create_window(output, w_width, w_height)
     local buf = vim.api.nvim_create_buf(false, true)
 
     vim.api.nvim_buf_set_lines(buf, 0, -1, false, output)
@@ -34,8 +32,8 @@ local function create_window(output)
     vim.api.nvim_buf_set_option(buf, "modifiable", false)
     vim.api.nvim_buf_set_option(buf, "bufhidden", "wipe")
 
-    local width = 50
-    local height = 10
+    local width = w_width
+    local height = w_height
     local row = (vim.o.lines - height) / 2
     local col = (vim.o.columns - width) / 2
 
@@ -56,10 +54,10 @@ function M.setup(opts)
     vim.api.nvim_create_user_command('Nfetch', function()
         if opts.type then
             local output = pull_output(opts.type)
-            create_window(output)
+            create_window(output, opts.width, opts.height)
         else
             local output = pull_output("fastfetch")
-            create_window(output)
+            create_window(output, 80, 40)
         end
     end, {})
 end
