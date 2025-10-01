@@ -1,5 +1,8 @@
 local M = { }
 
+--> diagnostics fix
+vim = vim
+
 local types = { "neofetch", "fastfetch", "pfetch" }
 
 local function pull_output(fetch_type)
@@ -8,6 +11,11 @@ local function pull_output(fetch_type)
 
     local result = handle:read("*a")
     handle:close()
+
+    --> strip ansi
+    result = result:gsub('\27%[[%d;]*m', '')
+    result = result:gsub('\27%[[%d;]*[A-Z]', '')
+    result = result:gsub('\27%[%?%d+[hl]', '')
 
     --> convert into blow
     local blow = { }
@@ -26,8 +34,8 @@ local function create_window(output)
     vim.api.nvim_buf_set_option(buf, "modifiable", false)
     vim.api.nvim_buf_set_option(buf, "bufhidden", "wipe")
 
-    local width = 140
-    local height = 30
+    local width = 50
+    local height = 10
     local row = (vim.o.lines - height) / 2
     local col = (vim.o.columns - width) / 2
 
@@ -45,7 +53,7 @@ end
 function M.setup(opts)
     opts = opts or { }
 
-    vim.keymap.set("n", "<Leader>m", function()
+    vim.api.nvim_create_user_command('Nfetch', function()
         if opts.type then
             local output = pull_output(opts.type)
             create_window(output)
@@ -53,7 +61,7 @@ function M.setup(opts)
             local output = pull_output("fastfetch")
             create_window(output)
         end
-    end)
+    end, {})
 end
 
 return M
